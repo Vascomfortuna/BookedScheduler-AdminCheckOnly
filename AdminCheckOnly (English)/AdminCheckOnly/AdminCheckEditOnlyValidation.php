@@ -55,37 +55,37 @@ class AdminCheckEditOnlyValidation implements IReservationValidationService
 	private function EvaluateCustomRule($series)
 	{
 		Log::Debug('Starting AdminCheckEditOnly validation.');
-		$configFile = Configuration::Instance()->File('AdminCheckOnly'); // Busca o ficheiro de configuração
-		$adminCheckInID = $configFile->GetKey('admincheckonly.attribute.checkin.id'); //Busca o ID configurado de AdminCheckInOnly
-		$adminCheckOutID = $configFile->GetKey('admincheckonly.attribute.checkout.id'); //Busca o ID configurado de AdminCheckOutOnly
+		$configFile = Configuration::Instance()->File('AdminCheckOnly'); // Gets config file
+		$adminCheckInID = $configFile->GetKey('admincheckonly.attribute.checkin.id'); //Gets AdminCheckInOnly configured ID
+		$adminCheckOutID = $configFile->GetKey('admincheckonly.attribute.checkout.id'); //Gets AdminCheckOutOnly configured ID
     $resources = $series->AllResources();
-		$adminResources=0; //Recursos com AdminCheckInOnly
+		$adminResources=0; //Resources with AdminCheckInOnly
 		$customMessage = $configFile->GetKey('admincheckonly.message.edit.error');
 
-		//Verfica se é Admin
+		//Checks if it is Admin
 		if($this->userSession->IsAdmin || $this->userSession->IsResourceAdmin || $this->userSession->IsScheduleAdmin){
 		   return new ReservationValidationResult();
 		}
 
-		//Verifica se o CheckIn foi efectuado
-		//Se não tiver CheckedIn, retorna validação correta
+		//Verifies if CheckIn was done
+		//If there is no CheckIn, returns a valid result
 		foreach ($series->Instances() as $instance){
 			if(!$instance->IsCheckedIn()){
 				return new ReservationValidationResult();
 			}
 		}
 
-		//Verifica se o CheckOut foi efectuado
-		//Se tiver CheckedOut, retorna validação correta
+		//Verifies if CheckOut was done
+		//If there is CheckOut, returns a valid result
 		foreach ($series->Instances() as $instance){
 			if($instance->IsCheckedOut()){
 				return new ReservationValidationResult();
 			}
 		}
 
-		//Verifica se algum dos recursos tem AdminChecks
-		//Se nenhum tiver AdminCheck, retorna validação válida
-		foreach ($resources as $key => $resource) {//Faz um ciclo para todos os recursos e busca AdminCheck
+		//Verifica for AdminChecks on resources
+		//If there is no AdminCheck, returns valid validation
+		foreach ($resources as $key => $resource) {
 
 			$attributeRepository = new AttributeRepository();
 			$attributes = $attributeRepository->GetEntityValues(4,$resource->GetId());
@@ -93,7 +93,7 @@ class AdminCheckEditOnlyValidation implements IReservationValidationService
 			foreach($attributes as $attribute){
 
 	                 if($adminCheckInID == $attribute->AttributeId || $adminCheckOutID == $attribute->AttributeId){
-	                   $adminCheckOnly = $attribute->Value; //Busca o valor do atributo AdminCheck
+	                   $adminCheckOnly = $attribute->Value; 
 
 										 if($adminCheckOnly){
 											 $adminResources++;
@@ -104,12 +104,11 @@ class AdminCheckEditOnlyValidation implements IReservationValidationService
 	 					 }
 	  Log::Debug('Validating AdminCheckEditOnly resources, AdminResources?:%s.', $adminResources);
 
-	  // Se houver recursos com AdminCheck
+	  // If there is AdminChecks, returns invalid validation and the configured message
 	  if($adminResources){
-			// Mostra mensagem costumizada ao utilizador
 			return new ReservationValidationResult(false, $customMessage);
 		}
-		//Se não houver recursos com AdminCheck
+		// If there is no AdminChecks
 		return new ReservationValidationResult();
 
  }
